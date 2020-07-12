@@ -33,9 +33,6 @@ const client = new Client({
   }
 });
 
-client.connect();
-
-
 var data = [];
 client.connect()
 .then(() => console.log("Connected Succesfully"))
