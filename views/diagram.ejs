@@ -1,0 +1,702 @@
+<html>
+<body>
+
+<div id="anychart-embed-samples-bct-sankey-diagram-01" class="anychart-embed anychart-embed-samples-bct-sankey-diagram-01">
+  <script src="https://cdn.anychart.com/releases/8.7.1/js/anychart-base.min.js?hcode=a0c21fc77e1449cc86299c5faa067dc4"></script>
+  <script src="https://cdn.anychart.com/releases/8.7.1/js/anychart-sankey.min.js"></script>
+  <script src="https://cdn.anychart.com/releases/8.7.1/js/anychart-core.min.js"></script>
+  <script src="https://cdn.anychart.com/releases/8.7.1/js/anychart-exports.min.js?hcode=a0c21fc77e1449cc86299c5faa067dc4"></script>
+  <script src="https://cdn.anychart.com/releases/8.7.1/js/anychart-ui.min.js?hcode=a0c21fc77e1449cc86299c5faa067dc4"></script>
+  <script src="https://cdn.anychart.com/releases/8.7.1/js/anychart-data-adapter.min.js"></script>
+
+  <div id="ac_style_samples-bct-sankey-diagram-01" style="display:none;">
+  html, body, #container {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+  }
+  </div>
+  
+  <script>(function(){
+  function ac_add_to_head(el){
+    var head = document.getElementsByTagName('head')[0];
+    head.insertBefore(el,head.firstChild);
+  }
+  function ac_add_link(url){
+    var el = document.createElement('link');
+    el.rel='stylesheet';el.type='text/css';el.media='all';el.href=url;
+    ac_add_to_head(el);
+  }
+  function ac_add_style(css){
+    var ac_style = document.createElement('style');
+    if (ac_style.styleSheet) ac_style.styleSheet.cssText = css;
+    else ac_style.appendChild(document.createTextNode(css));
+    ac_add_to_head(ac_style);
+  }
+  ac_add_link('https://cdn.anychart.com/releases/8.7.1/css/anychart-ui.min.css?hcode=a0c21fc77e1449cc86299c5faa067dc4');
+  ac_add_style(document.getElementById("ac_style_samples-bct-sankey-diagram-01").innerHTML);
+  ac_add_style(".anychart-embed-samples-bct-sankey-diagram-01{width:600px;height:450px;}");
+  })();</script>
+
+<script>
+
+class Link{
+  constructor(from, to, linkValue, toURL){
+    this.from = from;
+    this.to = to;
+    this.linkValue = linkValue;
+    this.toURL = toURL;
+  }
+}
+
+class Node {
+  constructor(name, value){
+    this.name = name;
+    this.value = value;
+    this.xMin = 0;
+    this.yMin = 0;
+    this.xMax = 0;
+    this.yMax = 0;
+    this.level = 0;
+    this.parent = [];
+    this.child = [];
+    this.outgoingLinks = [];
+    this.incomingLinks = [];
+    this.webpage = "";
+  }
+  get nodeName(){
+    return this.name;
+  }
+  get gNodeValue(){
+    return this.value;
+  }
+  get nodeLevel(){
+    return this.level
+  }
+  sNodeValue(value){
+    this.value = value;
+  }
+  setNodeLevel(level){
+    this.level = level
+  }
+  setCoordinates(xMin, xMax, yMin, yMax){
+    this.xMin = xMin;
+    this.xMax = xMax;
+    this.yMin = yMin;
+    this.yMax = yMax;
+  }
+  addParent(newParent){
+    this.parent.push(newParent);
+  }
+  addChild(newChild){
+    this.child.push(newChild);
+  }
+  printCoords(){
+    console.log(this.xMin + ", " + this.xMax + ", " + this.yMin + ", " + this.yMax)
+  }
+  withinBounds(e){
+    return e.clientX > this.xMin && e.clientX < this.xMax && e.clientY > this.yMin && e.clientY < this.yMax;
+  }
+  printNode(){
+    return this.node + ", " + this.value;
+  }
+  addOutgoingLink(link){
+    this.outgoingLinks.push(link);
+  }
+  addIncomingLink(link){
+    this.incomingLinks.push(link);
+  }
+}
+
+var sankeyData = <%- JSON.stringify(passedData) %>;
+console.log(sankeyData)
+
+var linksList = [];
+var nodeArray = [];
+var currentNodeSet = new Set();
+var nodeSet = new Set();
+
+
+for(var i=0; i < sankeyData.length; i++){
+  newLink = new Link(sankeyData[i][0], sankeyData[i][1], sankeyData[i][2], sankeyData[i][3]);
+  if(newLink.to == "Dept of Med Assistance Svcs"){
+    console.log(newLink);
+  }
+  linksList.push(newLink);
+}
+
+function createNodesFromLinks(links){
+  nodeArray = [];
+  nodeSet = new Set();
+  for(var i = 0; i < links.length; i++){
+    //If node has not been created, create new node
+    tempNodeFrom = new Node(links[i]["from"], links[i]["linkValue"]);
+    if(!nodeSet.has(tempNodeFrom.nodeName)){
+        tempNodeFrom.addChild(links[i]["to"]);
+        tempNodeFrom.addOutgoingLink(links[i]);
+        nodeArray.push(tempNodeFrom);
+        nodeSet.add(tempNodeFrom.nodeName);
+    } else{
+        for(var j = 0; j < nodeArray.length; j++){
+          if(tempNodeFrom.nodeName == nodeArray[j].nodeName){
+            nodeArray[j].addOutgoingLink(links[i]);
+            nodeArray[j].addChild(links[i]["to"]);
+          }
+        }
+    }
+
+    tempNodeTo = new Node(links[i]["to"], links[i]["linkValue"]);
+    tempNodeTo.webpage = links[i]["toURL"];
+    if(nodeSet.has(tempNodeTo.nodeName)){
+      for(var j = 0; j < nodeArray.length; j++){
+        if(tempNodeTo.nodeName == nodeArray[j].nodeName){
+          nodeArray[j].sNodeValue(nodeArray[j].gNodeValue + tempNodeTo.gNodeValue);
+          nodeArray[j].addIncomingLink(links[i]);
+          nodeArray[j].addParent(links[i]["from"]);
+        }
+      }
+    } else{
+      tempNodeTo.addParent(links[i]["from"]);
+      tempNodeTo.addIncomingLink(links[i]);
+      nodeArray.push(tempNodeTo);
+      nodeSet.add(tempNodeTo.nodeName);
+    }
+  }
+}
+createNodesFromLinks(linksList);
+console.log(nodeArray)
+
+function createNodesFromData(data){
+  nodeArray = [];
+  nodeSet = new Set();
+  for(var i = 0; i < data.length; i++){
+    tempNodeFrom = new Node(data[i][0], data[i][2]);
+    if(!nodeSet.has(tempNodeFrom.nodeName)){
+      tempNodeFrom.addChild(data[i][1]);
+      nodeArray.push(tempNodeFrom);
+      nodeSet.add(tempNodeFrom.nodeName);
+    } else{
+      for(var j = 0; j < nodeArray.length; j++){
+        if(tempNodeFrom.nodeName == nodeArray[j].nodeName){
+          nodeArray[j].addChild(data[i][1]);
+        }
+      }
+    }
+
+    tempNodeTo = new Node(data[i][1], data[i][2]);
+    if(nodeSet.has(tempNodeTo.nodeName)){
+      for(var j = 0; j < nodeArray.length; j++){
+        if(tempNodeTo.nodeName == nodeArray[j].nodeName){
+          nodeArray[j].addParent(data[i][0]);
+          nodeArray[j].sNodeValue = nodeArray[j].gNodeValue + tempNodeTo.gNodeValue;
+        }
+      }
+    } else{
+      tempNodeTo.addParent(data[i][0]);
+      nodeArray.push(tempNodeTo);
+      nodeSet.add(tempNodeTo.nodeName);
+    }
+  }
+}
+
+function getCurrentNodes(currentSet){
+    currentNodeSet = new Set();
+    for(var i = 0; i < currentSet.kc.length; i++){
+        currentNodeSet.add(currentSet.kc[i][0]);
+        currentNodeSet.add(currentSet.kc[i][1]);
+    }
+}
+</script>
+
+
+
+<div id="container" style="width: 1500px; height: 650px"></div>
+
+<script>
+  
+anychart.onDocumentReady(function () {
+    var chartSelection = "Main";
+    var testData = anychart.data.set(sankeyData)
+    var links = linksList;
+    var nodes = nodeArray;
+
+    var allData = testData.mapAs({from: 0, to: 1, weight: 2});
+    var dataSet = anychart.data.set([]);
+    var mainDataSet = anychart.data.set([]);
+    var legislativeDataSet = anychart.data.set([])
+    var transportDataSet = anychart.data.set([]);
+    var financeDataSet = anychart.data.set([]);
+    var educationDataSet = anychart.data.set([]);
+    var commerceDataSet = anychart.data.set([]);
+    var agricultureDataSet = anychart.data.set([]);
+    var adminDataSet = anychart.data.set([]);
+    var specialDataSet = anychart.data.set([]);
+    var selectedSet = mainDataSet;
+
+    var allDataSets = [mainDataSet, transportDataSet, financeDataSet, educationDataSet, commerceDataSet, agricultureDataSet, adminDataSet, legislativeDataSet];
+    //var allDataSets = [mainDataSet, instructionSet]
+    function getDataSet(firstThree){
+      for(var i = 0; i < allDataSets.length; i++){
+        if(firstThree == "mai"){
+          return mainDataSet;
+        } else if(firstThree == "tra"){
+          return transportDataSet;
+        } else if(firstThree == "fin"){
+          return financeDataSet;
+        } else if(firstThree == "edu"){
+          return educationDataSet;
+        } else if(firstThree == "com"){
+          return commerceDataSet;
+        } else if(firstThree == "agr"){
+          return agricultureDataSet;
+        } else if(firstThree == "adm"){
+          return adminDataSet;
+        } else if(firstThree == "leg"){
+          return legislativeDataSet;
+        }
+      }
+    }
+
+    function getNode(name){
+      for(var i = 0; i < nodeArray.length; i++){
+        if(nodeArray[i].nodeName == name){
+          return nodeArray[i];
+        }
+      }
+    }
+
+    function setNodeCoordinates(set){
+      getCurrentNodes(set);
+      for(let item of currentNodeSet){
+        currentNode = chart.qf[item]
+        changingNode = getNode(item)
+        if(currentNode.pe - currentNode.Xe < 5){
+          changingNode.setCoordinates(Math.floor(currentNode.gj), Math.floor(currentNode.hj), Math.floor(currentNode.pe - 2), Math.floor(currentNode.Xe + 3));
+        } else{
+          changingNode.setCoordinates(Math.floor(currentNode.gj), Math.floor(currentNode.hj), Math.floor(currentNode.pe), Math.floor(currentNode.Xe));
+        }
+        changingNode.setNodeLevel(currentNode.level)
+      }
+    }
+
+    // function radioChecked(){
+    //   if(document.getElementById("discretionary").checked){
+    //     chart.flow().normal().fill(function(){
+    //       if(this.from == "City, Town, and County Funds" || this.from == "State Funds" || this.to == "Secretary of Finance"){
+    //         return "#07da63"
+    //       } else{
+    //         return "grey 0.3";
+    //       }
+    //     });
+    //     chart.flow().hovered().fill(function(){
+    //       if(this.from == "City, Town, and County Funds" || this.from == "State Funds" || this.to == "Secretary of Finance"){
+    //         return anychart.color.darken("#07da63")
+    //       } else{
+    //         return anychart.color.darken(this.sourceColor);
+    //       }
+    //     })
+    //   } else if(document.getElementById("mandatory").checked){
+    //     chart.flow().normal().fill(function(){
+    //       if(this.from == "Balances at Beginning of Year" || this.from == "Federal Funds" || this.to == "Secretary of Education" || this.to == "Department of Transportation"){
+    //         return "#3792cb"
+    //       } else{
+    //         return "grey 0.3";
+    //       }
+    //     });
+    //     chart.flow().hovered().fill(function(){
+    //       if(this.from == "Balances at Beginning of Year" || this.from == "Federal Funds" || this.to == "Secretary of Education" || this.to == "Department of Transportation"){
+    //         return anychart.color.darken("#3792cb")
+    //       } else{
+    //         return anychart.color.darken(this.sourceColor);
+    //       }
+    //     })
+    //   } 
+    //   else{
+    //     chart.flow().normal().fill("grey 0.3");
+    //     chart.flow().hovered().fill(function(){
+    //       return anychart.color.darken(this.sourceColor);
+    //     });
+    //   }
+    // }
+
+
+    var rowsCount = testData.getRowsCount();
+    for(var i = 0; i < links.length; i++){
+      dataSet.append([linksList[i]["from"], linksList[i]["to"], linksList[i]["linkValue"]]);
+      if(linksList[i]["to"] == "Total Budget" || linksList[i]["from"] == "Total Budget" || linksList[i]["from"] == "Higher Education Operating" || linksList[i]["from"] == "General" || linksList[i]["from"] == "Federal Trust" || linksList[i]["from"] == "Highway Maintenance and Construction" || linksList[i]["from"] == "Debt Service" || linksList[i]["from"] == "Trust and Agency" || linksList[i]["from"] == "Dedicated Special Revenue" || linksList[i]["from"] == "Special Revenue" || linksList[i]["from"] == "Enterprise" || linksList[i]["from"] == "Internal Service"){
+        mainDataSet.append([linksList[i]["from"], linksList[i]["to"], linksList[i]["linkValue"]]);
+      }
+    }
+
+    // create a chart and set the data
+    var chart = anychart.sankey(mainDataSet);
+    getCurrentNodes(selectedSet);
+    console.log(dataSet);
+
+    chart.container("container");
+    chart.draw();
+
+    // set the width of nodes
+    chart.nodeWidth("50%");
+    chart.contextMenu(false);
+
+    // set the chart title
+    chart.title("Alluvial Flow Diagram of the Virginia State Budget");
+
+    dataSet = selectedSet
+    setNodeCoordinates(dataSet);
+
+    chart.node().tooltip().position("leftCenter");
+
+    function rightSideBounds(e){
+      return(e.clientX > 1280 && e.clientX < 1480);
+    }
+    function leftSideBounds(e){
+      return(e.clientX > 10 && e.clientX < 205);
+    }
+    function backBounds(e){
+      return(e.clientX > 10 && e.clientX < 375);
+    }
+
+    function noMoreLevel(node){
+      var counter = 0;
+      console.log(node.child)
+      for(let item of node.child){
+        childNode = getNode(item);
+        console.log(childNode.child)
+        if(childNode.child.length == 0){
+          counter += 1
+        }
+      }
+      console.log(counter)
+      if(counter == node.child.length){
+        return true;
+      }
+      return false;
+    }
+    // document.getElementById("discretionary").addEventListener("click", function(e){
+    //   radioChecked();
+    // });
+    // document.getElementById("mandatory").addEventListener("click", function(e){
+    //   radioChecked();
+    // });
+    // document.getElementById("none").addEventListener("click", function(e){
+    //   radioChecked();
+    // });
+
+    chart.addEventListener('contextmenu', function(e){
+      window.oncontextmenu = function(ev){
+        ev.preventDefault();
+      }
+      if(chartSelection == "Main"){
+        dataSet = mainDataSet
+      }
+      setNodeCoordinates(dataSet);
+      for(let item of currentNodeSet){
+        currentNode = getNode(item);
+        if(currentNode.withinBounds(e) && currentNode.name == "Dept of Med Assistance Svcs"){
+          var newWin = window.open("info", "newWindow", "width = 600, height = 600, resizeable=yes");
+        } else if(currentNode.withinBounds(e) && currentNode.name != "Dept of Med Assistance Svcs"){
+          incoming = '';
+          outgoing = '';
+          webpage = ''
+
+          var newWin = window.open("", "newWindow", "width=600, height=600, resizeable=yes, scrollbars=yes, status=yes, location=yes, toolbar=yes, menubar=yes");
+          
+          if(!newWin.closed){ 
+            newWin.close();
+            newWin = window.open("", "newWindow", "width=600, height=600, resizeable=yes, scrollbars=yes, status=yes, location=yes, toolbar=yes");
+          }
+          for(var j = 0; j < links.length; j++){
+            if(links[j]["to"] == currentNode.nodeName){
+              incoming +=  '<html><p>' + '$' + links[j]["linkValue"].toLocaleString() + ' from ' + links[j]['from'] + '</p>'; 
+            }
+            if(links[j]["from"] == currentNode.name){
+              outgoing += '<html><p>' + '$' + links[j]["linkValue"].toLocaleString() + ' to ' + links[j]['to'] + '</p>';
+            }
+          }
+
+          if(incoming == ''){
+            incoming = currentNode.nodeName + " has no information available about incoming finances";
+          }
+          if(outgoing == ''){
+            outgoing = currentNode.nodeName + " has no information available about outgoing finances";
+          }
+          if(currentNode.webpage != null){
+            webpage += '<a href=' + currentNode.webpage + '> Click Here to find more Information about ' + currentNode.name + '</a>' + '<br><br> <a href="ageBreakdown">Click Here to see Expenditure Breakdown by Age' +'<br><br> <a href="countyBreakdown">Click Here to see Expenditure Breakdown by County'
+          }
+          newWin.document.write('<html><h2 id="general">Information About ' + currentNode.nodeName + '</h2>' + '<h4>Incoming Funding:</h4> '+ incoming + '<h4>Funding is spent on the following areas:</h4>' + outgoing + webpage + '</html>');
+        }
+      }
+      return false;
+    }, false);
+
+    chart.listen('click', function(e){
+      console.log(chartSelection)
+      console.log(dataSet)
+      // dataSet = selectedSet
+      if(chartSelection == "Main"){
+        setNodeCoordinates(mainDataSet);
+        for(let item of currentNodeSet){
+          currentNode = getNode(item);
+          if(currentNode.withinBounds(e) && currentNode.level == 3){
+            dataSet = anychart.data.set([])
+            for(var j = 0; j < currentNode.outgoingLinks.length; j++){
+              dataSet.append([currentNode.outgoingLinks[j]["from"], currentNode.outgoingLinks[j]["to"], currentNode.outgoingLinks[j]["linkValue"]]);
+            }
+            for(var k = 0; k < currentNode.incomingLinks.length; k++){
+              dataSet.append([currentNode.incomingLinks[k]["from"], currentNode.incomingLinks[k]["to"], currentNode.incomingLinks[k]["linkValue"]]);
+            }
+            chart.data(dataSet)
+            chartSelection = "other";
+            break;
+          }
+        }
+      }
+      else if(chartSelection == "other"){
+        setNodeCoordinates(dataSet);
+        for(let item of currentNodeSet){
+          currentNode = getNode(item);
+          if(backBounds(e)){
+            chart.data(mainDataSet);
+            selectedSet = mainDataSet;
+            setNodeCoordinates(mainDataSet);
+            chartSelection = "Main";
+          } 
+          if(currentNode.withinBounds(e) && currentNode.outgoingLinks != 0 && currentNode.level == 2 && !noMoreLevel(currentNode)){
+            dataSet = anychart.data.set([])
+            var testingParentNode = getNode(currentNode.parent[0]);
+            for(var j = 0; j < currentNode.outgoingLinks.length; j++){
+              dataSet.append([currentNode.outgoingLinks[j]["from"], currentNode.outgoingLinks[j]["to"], currentNode.outgoingLinks[j]["linkValue"]]);
+            }
+            chart.data(dataSet);
+            chartSelection = "other2";
+          } else if(currentNode.withinBounds(e) && (currentNode.child.length == 0 || noMoreLevel(currentNode))){
+            incoming = '';
+            outgoing = '';
+            var newWin = window.open("", "newWindow", "width=600, height=600");
+
+            if(!newWin.closed){ 
+              newWin.close();
+              newWin = window.open("", "newWindow", "width=600, height=600");
+            }
+            for(var j = 1; j < links.length; j++){
+              if(links[j]["to"] == currentNode.nodeName){
+                incoming +=  '<html><p>' + '$' + links[j]["linkValue"].toLocaleString() + ' from ' + links[j]['from'] + '</p>'; 
+              }
+              if(links[j]["from"] == currentNode.name){
+                outgoing += '<html><p>' + '$' + links[j]["linkValue"].toLocaleString() + ' to ' + links[j]['to'] + '</p>';
+              }
+            }
+
+            if(incoming == ''){
+              incoming = currentNode.nodeName + " has no information available about incoming finances";
+            }
+            if(outgoing == ''){
+              outgoing = currentNode.nodeName + " has no information available about outgoing finances";
+            }
+            newWin.document.write('<html><h2 id="general">Information About ' + currentNode.nodeName + '</h2>' + '<h4>Incoming Funding:</h4> '+ incoming + '</html>' + '<h4>Funding is spent on the following areas:</h4>' + outgoing);
+          }
+        }
+      }
+      else if(chartSelection == "other2"){
+        setNodeCoordinates(dataSet);
+        for(let item of currentNodeSet){
+          currentNode = getNode(item);
+          console.log(currentNode)
+          if(currentNode.withinBounds(e) && backBounds(e)){
+            currentNode = getNode(currentNode.parent[0]);
+            dataSet = anychart.data.set([])
+            for(var j = 0; j < currentNode.outgoingLinks.length; j++){
+              dataSet.append([currentNode.outgoingLinks[j]["from"], currentNode.outgoingLinks[j]["to"], currentNode.outgoingLinks[j]["linkValue"]]);
+            }
+            for(var k = 0; k < currentNode.incomingLinks.length; k++){
+              dataSet.append([currentNode.incomingLinks[k]["from"], currentNode.incomingLinks[k]["to"], currentNode.incomingLinks[k]["linkValue"]]);
+            }
+            console.log(dataSet);
+            chart.data(dataSet);
+            chartSelection = "other";
+          } if(currentNode.withinBounds(e) && currentNode.outgoingLinks != 0 && currentNode.level == 1 && !noMoreLevel(currentNode)){
+            dataSet = anychart.data.set([])
+            var testingParentNode = getNode(currentNode.parent[0]);
+            for(var j = 0; j < currentNode.outgoingLinks.length; j++){
+              dataSet.append([currentNode.outgoingLinks[j]["from"], currentNode.outgoingLinks[j]["to"], currentNode.outgoingLinks[j]["linkValue"]]);
+            }
+            chart.data(dataSet);
+            chartSelection = "other3";
+          }else if(currentNode.withinBounds(e) && currentNode.nodeName == "Dept of Med Assistance Svcs"){
+            var newWin = window.open("info", "width = 600, height = 600, menubar=yes, toolbar=yes");
+          }
+          else if(currentNode.withinBounds(e) && (currentNode.child.length == 0 || noMoreLevel(currentNode))){
+              incoming = '';
+              outgoing = '';
+              var newWin = window.open("", "newWindow", "width=600, height=600");
+
+              if(!newWin.closed){ 
+                newWin.close();
+                newWin = window.open("", "newWindow", "width=600, height=600");
+              }
+              for(var j = 1; j < links.length; j++){
+                if(links[j]["to"] == currentNode.nodeName){
+                  incoming +=  '<html><p>' + '$' + links[j]["linkValue"].toLocaleString() + ' from ' + getNode(currentNode.parent[0]).parent[0] + '</p>'; 
+                }
+                if(links[j]["from"] == currentNode.name){
+                  outgoing += '<html><p>' + '$' + links[j]["linkValue"].toLocaleString() + ' to ' + links[j]['to'] + '</p>';
+                }
+              }
+
+              if(incoming == ''){
+                incoming = currentNode.nodeName + " has no information available about incoming finances";
+              }
+              if(outgoing == ''){
+                outgoing = currentNode.nodeName + " has no information available about outgoing finances";
+              }
+              newWin.document.write('<html><h2 id="general">Information About ' + currentNode.nodeName + '</h2>' + '<h3>Incoming Funding:</h3> '+ incoming + '</html>' + '<h3>Funding is spent on the following areas:</h3>' + outgoing);
+            }
+        }
+      }
+      else if(chartSelection == "other3"){
+        setNodeCoordinates(dataSet);
+        for(let item of currentNodeSet){
+          currentNode = getNode(item);
+          console.log(currentNode)
+          if(currentNode.withinBounds(e) && backBounds(e)){
+            currentNode = getNode(currentNode.parent[0]);
+            dataSet = anychart.data.set([])
+            for(var j = 0; j < currentNode.outgoingLinks.length; j++){
+              dataSet.append([currentNode.outgoingLinks[j]["from"], currentNode.outgoingLinks[j]["to"], currentNode.outgoingLinks[j]["linkValue"]]);
+            }
+            console.log(dataSet);
+            chart.data(dataSet);
+            chartSelection = "other2";
+          } else if(currentNode.withinBounds(e)){
+              incoming = '';
+              outgoing = '';
+              var newWin = window.open("", "newWindow", "width=600, height=600");
+
+              if(!newWin.closed){ 
+                newWin.close();
+                newWin = window.open("", "newWindow", "width=600, height=600");
+              }
+              for(var j = 1; j < links.length; j++){
+                if(links[j]["to"] == currentNode.nodeName){
+                  incoming +=  '<html><p>' + '$' + links[j]["linkValue"].toLocaleString() + ' from ' + getNode(currentNode.parent[0]).parent[0] + '</p>'; 
+                }
+                if(links[j]["from"] == currentNode.name){
+                  outgoing += '<html><p>' + '$' + links[j]["linkValue"].toLocaleString() + ' to ' + links[j]['to'] + '</p>';
+                }
+              }
+
+              if(incoming == ''){
+                incoming = currentNode.nodeName + " has no information available about incoming finances";
+              }
+              if(outgoing == ''){
+                outgoing = currentNode.nodeName + " has no information available about outgoing finances";
+              }
+              newWin.document.write('<html><h2 id="general">Information About ' + currentNode.nodeName + '</h2>' + '<h3>Incoming Funding:</h3> '+ incoming + '</html>' + '<h3>Funding is spent on the following areas:</h3>' + outgoing);
+            }
+        }
+      }
+    });
+
+    chart.node().labels().useHtml(true);
+    chart.node().labels().format(function(){
+      var newName = "";
+      if(this.name.split("-")[1] != null){
+        newName = this.name.split("-")[0];
+      } else{
+        newName = this.name;
+      }
+      return this.name;
+    });
+    chart.flow().tooltip().format(function(){
+      return "$ " + this.value.toLocaleString();
+    })
+    chart.node().tooltip().titleFormat(function(){
+      var newName = ""
+      if(this.name.split("-")[1] != null){
+        newName = this.name.split("-")[0];
+      } else{
+        newName = this.name;
+      }
+      return this.name + " ($" + this.value.toLocaleString() + ")";
+    });
+    chart.node().tooltip().format(function(){
+      var node = getNode(this.name);
+      var outgoing = "Outgoing:" + "\n";
+      var incoming = "Incoming:" + "\n";
+      var variableOutgoing = "";
+      var variableIncoming = "";
+      if(node.child.length == 0){
+        variableOutgoing = "Click to find more information about this agency" + "\n";
+      } else if(this.outcome.length == 0 && node.child.length != 0){
+        variableOutgoing = "Click to see further breakdown of this area's budget" + "\n";
+      }
+       else{
+        // console.log(node.level)
+          if(node.level == 2 && chartSelection == "Main"){
+            variableOutgoing = "Click to see this area's spending";
+          }
+          else{
+            for(var i = 0; i < node.outgoingLinks.length; i++){
+              variableOutgoing += "$" + node.outgoingLinks[i]["linkValue"].toLocaleString() + " -> " + node.outgoingLinks[i]["to"] + " \n";
+            }
+          }
+      }
+      if(node.incomingLinks.length == 0){
+        variableIncoming = "There is no available information about the incoming money" + "\n";
+      } else{
+        for(var i = 0; i < node.incomingLinks.length; i++){
+          variableIncoming += node.incomingLinks[i]["from"] + " -> $" + node.incomingLinks[i]["linkValue"].toLocaleString() + " \n";
+        }
+      }
+
+      outgoing += variableOutgoing;
+      incoming += variableIncoming;
+      return incoming + "\n" + outgoing;
+    });
+});
+</script>
+<!-- 
+<script>
+  if(chartSelection == "Main"){
+    
+  }
+</script> -->
+<!-- <a href="\download">Download</a> -->
+<!-- <div id="labels" style="width: 100%; display: flex;">
+  <div id = "leftLabel" style="text-align: center; margin-left:80px; margin-top:0px">
+    <p id="leftLabelP"></p>
+  </div>
+  <div id = "centerLabel" style="text-align: center; margin-left:600px; margin-top:0px">
+    <p id = "centerLabelP">Government Funds</p>
+  </div>
+  <div id = "rightLabel" style="text-align: center; margin-left:540px; margin-top:0px">
+    <p id = "rightLabelP">Government Offices</p>
+  </div>
+</div> -->
+
+<div id="Checkboxes" style="width: 100%; display: flex;">
+  <div id="fullDiagram" style="text-align: center; margin-left:30px;">
+    <a href="\downloadAll">Download Data</a>
+    <!-- <input type="checkbox" style="margin-top: 0px; margin-left: 60px; margin-right: 50px;" id="check">
+    <p style="margin-left: 10px; margin-top: 10px;">View Full Diagram</p> -->
+  </div>
+  <!-- <div id="left" style="margin-left:470px; text-align: center;">
+    <input type="radio" id="discretionary" name="highlight" style="margin-top: 0px;"></input>
+    <p style="text-align:center; margin-top: 10px;">Discretionary Funds</p>
+  </div>
+  <div id="middle" style="text-align: center; margin-left: 50px;">
+    <input type="radio" id="mandatory" name="highlight" style="margin-top: 0px;"></input>
+    <p style="text-align: center; margin-top: 10px;">Mandatory Funds</p>
+  </div>
+  <div id="right" style="text-align: center; margin-left: 50px;">
+    <input type="radio" id="none" name="highlight" style="margin-top: 0px;" checked></input>
+    <p style="text-align: center; margin-top: 10px;">None</p>
+  </div> -->
+</div>
+</div>
+
+</body>
+</html>
