@@ -24,14 +24,24 @@ app.get('/countyBreakdown', function(req, res){
 
 app.listen(3000);
 
-const Client = require('pg').Client
+const { Client } = require('pg');
+
 const client = new Client({
-    user: "postgres", 
-    password: "password",
-    host: "localhost",
-    port: "5432",
-    database: "testdata"
-})
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+client.connect();
+
+client.query('SELECT table_schema,table_name FROM information_schema.tables;', (err, res) => {
+  if (err) throw err;
+  for (let row of res.rows) {
+    console.log(JSON.stringify(row));
+  }
+  client.end();
+});
 
 var data = [];
 client.connect()
