@@ -24,22 +24,12 @@ app.get('/countyBreakdown', function(req, res){
 
 app.listen(3000);
 
-
-// const Client = require('pg').Client
-// const client = new Client({
-//     user: "tpc3yw@va-energy2",
-//     password: "3fuzzyDice",
-//     host: "va-energy2.postgres.database.azure.com",
-//     port: "5432",
-//     database: "postgres" 
-// })
-
 const Client = require('pg').Client
 const client = new Client({
     user: "postgres", 
     password: "password",
     host: "localhost",
-    port: "5432",
+    port: "3000",
     database: "testdata"
 })
 
