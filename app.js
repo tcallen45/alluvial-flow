@@ -36,7 +36,7 @@ const client = new Client({
 var data = [];
 client.connect()
 .then(() => console.log("Connected Succesfully"))
-.then(() => client.query('SELECT "From", "To", CAST("Value" AS DOUBLE PRECISION), "Webpage" FROM sankeyData'))
+.then(() => client.query('SELECT "From", "To", CAST("Value" AS DOUBLE PRECISION), "Webpage" FROM sankeydata'))
 .then(results => {for(var i = 0; i < results.rowCount; i++){
     var row = results.rows[i];
     var from = row.From;
